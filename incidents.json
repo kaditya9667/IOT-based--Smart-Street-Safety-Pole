@@ -1,0 +1,58 @@
+﻿[
+  {
+    "id": "CASE-DEMO-001",
+    "timestamp": "2026-11-01T00:00:00.000Z",
+    "triggerType": "SOS Emergency Call Initiated",
+    "poleId": "POLE-01 (Demo)",
+    "severity": "Critical",
+    "status": "Resolved",
+    "assignedTeam": "Municipal Patrol Unit 1",
+    "location": "Central Boulevard & Station Rd",
+    "imageUrl": "",
+    "confidence": 1.0,
+    "validationStatus": "Confirmed Alert",
+    "category": "emergency",
+    "telemetrySnapshot": {
+      "ldrValue": 320,
+      "mq2Value": 120,
+      "tiltX": 0.0,
+      "tiltY": 0.0,
+      "deltaTiltX": 0.0,
+      "deltaTiltY": 0.0,
+      "netTilt": 0.0,
+      "tiltThreshold": 10.0,
+      "gps": {
+        "lat": 28.6139,
+        "lng": 77.2090
+      }
+    }
+  },
+  {
+    "id": "CASE-DEMO-002",
+    "timestamp": "2026-11-01T01:15:00.000Z",
+    "triggerType": "Pole Tilt Detected (10.4° deviation)",
+    "poleId": "POLE-01 (Demo)",
+    "severity": "Warning",
+    "status": "Pending",
+    "assignedTeam": "Municipal Emergency Station 2",
+    "location": "North Corridor Crossroad",
+    "imageUrl": "",
+    "confidence": 0.95,
+    "validationStatus": "Warning Event",
+    "category": "warning",
+    "telemetrySnapshot": {
+      "ldrValue": 450,
+      "mq2Value": 180,
+      "tiltX": 7.2,
+      "tiltY": -7.5,
+      "deltaTiltX": 7.2,
+      "deltaTiltY": -7.5,
+      "netTilt": 10.4,
+      "tiltThreshold": 10.0,
+      "gps": {
+        "lat": 28.6139,
+        "lng": 77.2090
+      }
+    }
+  }
+]

@@ -1,0 +1,517 @@
+/* Smart Street Safety Pole — Municipal Safety Platform Stylesheet */
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Custom Leaflet Map Pin Styles */
+.custom-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  line-height: 1.4;
+}
+
+/* ========================================================= */
+/* DASHBOARD MICRO-ANIMATIONS & INTERACTIVE MOTION           */
+/* ========================================================= */
+
+/* 1. Smooth Tab Slide-In */
+.tab-pane {
+  animation: tabSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 2. Tactile Button & Action Press Micro-Feedback */
+button, a.inline-flex, .table-filter-btn {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.16s ease, 
+              background-color 0.16s ease, 
+              color 0.16s ease,
+              border-color 0.16s ease;
+}
+
+button:active, a.inline-flex:active {
+  transform: scale(0.97);
+}
+
+/* 3. Interactive KPI Cards & Status Panels Hover Lift */
+#tab-overview .grid > div,
+.feature-goto-tab,
+.workflow-step-btn {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.2s ease;
+}
+
+#tab-overview .grid > div:hover {
+  transform: translateY(-2.5px);
+}
+
+/* 4. Table Row Smooth Hover (Zero Jitter) */
+table tbody tr {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+table tbody tr:hover {
+  background-color: rgba(241, 245, 249, 0.75);
+}
+
+/* Suppress Side Scrolling Bar on Tables to Prevent Layout Jitter */
+#tab-alerts .table-container,
+#tab-alerts .overflow-hidden,
+.table-no-side-scroll {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+#tab-alerts .table-container::-webkit-scrollbar,
+#tab-alerts .overflow-hidden::-webkit-scrollbar,
+.table-no-side-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 5. Live Telemetry Dot Breathing Pulse */
+@keyframes beaconPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.animate-pulse, #top-esp-dot, #hardware-pill .bg-emerald-500 {
+  animation: beaconPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* 6. Emergency Alert Dot Glow Pulse */
+@keyframes alertPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+#notification-badge, .bg-red-500.animate-pulse {
+  animation: alertPulseRing 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* 7. Modal Spring & Slide Micro-Animation */
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#modal-incident-details:not(.hidden) > div,
+#modal-login:not(.hidden) > div,
+#notification-dropdown:not(.hidden) {
+  animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 8. Notification Bell Subtle Micro-Swing */
+@keyframes bellJiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(12deg); }
+  40% { transform: rotate(-10deg); }
+  60% { transform: rotate(6deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+.bell-jiggle {
+  animation: bellJiggle 1s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* 9. Value Update Micro-Pop Transition */
+@keyframes valPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); filter: brightness(1.2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.val-updated {
+  animation: valPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 10. Interactive Pole Component SVG Callouts Micro-Animation */
+.pole-component-btn {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.pole-component-btn:hover {
+  transform: scale(1.04);
+}
+
+/* ========================================================= */
+/* AURORA BACKGROUND ANIMATION & GRADIENTS                   */
+/* ========================================================= */
+@keyframes aurora {
+  from {
+    background-position: 50% 50%, 50% 50%;
+  }
+  to {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
+
+.aurora-container {
+  position: absolute;
+  inset: -10px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aurora-bg {
+  --white-gradient: repeating-linear-gradient(100deg, #ffffff 0%, #ffffff 7%, transparent 10%, transparent 12%, #ffffff 16%);
+  --dark-gradient: repeating-linear-gradient(100deg, #000000 0%, #000000 7%, transparent 10%, transparent 12%, #000000 16%);
+  --aurora: repeating-linear-gradient(100deg, #00f0ff 10%, #6366f1 15%, #38bdf8 20%, #d946ef 25%, #00f0ff 30%);
+  position: absolute;
+  inset: -20px;
+  background-image: var(--white-gradient), var(--aurora);
+  background-size: 300%, 200%;
+  background-position: 50% 50%, 50% 50%;
+  filter: blur(14px) invert(1);
+  opacity: 0.45;
+  mask-image: radial-gradient(ellipse at 100% 0%, black 15%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 15%, transparent 75%);
+  will-change: transform;
+}
+
+.aurora-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--white-gradient), var(--aurora);
+  background-size: 200%, 100%;
+  background-attachment: fixed;
+  animation: aurora 55s linear infinite;
+  mix-blend-mode: difference;
+}
+
+/* ========================================================= */
+/* ULTRA HIGH-CONTRAST TRUE-BLACK EYE CANDY DARK MODE        */
+/* ========================================================= */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #000000 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Aurora in True Black */
+html.dark .aurora-bg {
+  background-image: var(--dark-gradient), var(--aurora);
+  filter: blur(14px) invert(0);
+  opacity: 0.60;
+}
+
+html.dark .aurora-bg::after {
+  background-image: var(--dark-gradient), var(--aurora);
+  mix-blend-mode: screen;
+  opacity: 0.70;
+}
+
+/* Navigation & Header Glassmorphism */
+html.dark #public-navbar {
+  background-color: rgba(4, 6, 10, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark aside#sidebar {
+  background-color: #04060a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark header {
+  background-color: #04060a !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark main {
+  background-color: #000000 !important;
+}
+
+/* Base Surfaces: Obsidian / Carbon Black with Hairline Borders */
+html.dark .bg-white {
+  background-color: #090c12 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.85) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html.dark .bg-white:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #04060a !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #11151f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Text High-Contrast Hierarchy */
+html.dark .text-navy-900,
+html.dark .text-slate-900 {
+  color: #ffffff !important;
+}
+
+html.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #718096 !important;
+}
+
+/* Borders & Separators */
+html.dark .border-slate-200,
+html.dark .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .divide-slate-100 > * {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Sidebar Active State Indicator */
+html.dark .sidebar-nav-item.active {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.02) 100%) !important;
+  color: #38bdf8 !important;
+  border-left: 3px solid #38bdf8 !important;
+  font-weight: 600 !important;
+}
+
+html.dark .sidebar-nav-item:not(.active):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Vibrant Badges & Status Pills */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+html.dark .bg-red-50 {
+  background-color: rgba(244, 63, 94, 0.14) !important;
+  color: #fb7185 !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: rgba(56, 189, 248, 0.14) !important;
+  color: #38bdf8 !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+/* High-Contrast Interactive Tables */
+html.dark table thead th {
+  background-color: #06080d !important;
+  color: #8b9bb4 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+html.dark table tbody tr {
+  background-color: #090c12 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+html.dark table tbody tr:hover {
+  background-color: #121722 !important;
+}
+
+/* Controls, Inputs & Forms */
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background-color: #05070c !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark input:focus, 
+html.dark select:focus, 
+html.dark textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* Leaflet Maps High-Tech Tactical Dark Filter */
+html.dark .leaflet-tile {
+  filter: invert(100%) hue-rotate(185deg) brightness(80%) contrast(125%) saturate(75%) !important;
+}
+
+html.dark .leaflet-container {
+  background: #000000 !important;
+}
+
+html.dark .leaflet-control-zoom a {
+  background-color: #090c12 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .leaflet-control-zoom a:hover {
+  background-color: #141a26 !important;
+}
+
+html.dark .leaflet-popup-content-wrapper {
+  background: #0a0d14 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.9), 0 0 15px rgba(56, 189, 248, 0.1) !important;
+}
+
+html.dark .leaflet-popup-tip {
+  background: #0a0d14 !important;
+}
+
+html.dark .leaflet-popup-content p {
+  color: #cbd5e1 !important;
+}
+
+html.dark .leaflet-popup-content p strong {
+  color: #38bdf8 !important;
+}
+
+html.dark .custom-map-pin > div {
+  border-color: #04060a !important;
+  box-shadow: 0 0 14px currentColor !important;
+}
+
+/* High-Contrast Landing Page Sections */
+html.dark #features .bg-white:hover,
+html.dark #how-it-works .bg-white:hover {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.95), 0 0 25px -5px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* Modals & Overlays */
+html.dark #modal-incident-details > div,
+html.dark #active-emergency-panel > div,
+html.dark #modal-login > div,
+html.dark #notification-dropdown,
+html.dark #mobile-nav-dropdown {
+  background-color: #090c12 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 40px -10px rgba(56, 189, 248, 0.15) !important;
+}
+
+/* Active Emergency Alert Panel (Old Type Style Enhanced) */
+#active-emergency-panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.emergency-pulse-glow {
+  box-shadow: 0 0 50px rgba(239, 68, 68, 0.35);
+  animation: emergencyGlow 1.8s infinite alternate;
+}
+
+@keyframes emergencyGlow {
+  0% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.25); border-color: rgba(239, 68, 68, 0.5); }
+  100% { box-shadow: 0 0 65px rgba(239, 68, 68, 0.55); border-color: rgba(239, 68, 68, 0.9); }
+}
+
+/* Video Recording Preview & Controls */
+html.dark #cam-video-row {
+  background-color: #090c12 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.recording-active-btn {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  color: #f87171 !important;
+}
+
+/* Sleek Obsidian Scrollbars */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #171d28;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #232c3d;
+}

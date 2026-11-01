@@ -1,0 +1,9 @@
+# SafePole AI – YOLOv8 Fire Detection Sidecar
+# Install with: pip install -r requirements.txt
+
+ultralytics>=8.0.0        # YOLOv8 engine
+opencv-python>=4.8.0      # Video frame reading & display window
+requests>=2.31.0          # POST alerts to Node.js server
+numpy>=1.24.0             # Array operations
+Pillow>=10.0.0            # Image handling
+

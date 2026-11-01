@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Municipal Safety Console — Authentication</title>
+  
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              800: '#0b132b',
+              900: '#070d1e',
+              950: '#040711',
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-blue-600 selection:text-white font-sans antialiased relative overflow-x-hidden">
+  
+  <!-- Background Ambient Glow -->
+  <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Notification Toast -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <div class="w-full max-w-md relative z-10">
+    
+    <!-- Branding Header -->
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-navy-800 border border-slate-700 shadow-xl mb-3 text-blue-400">
+        <i data-lucide="shield-alert" class="w-7 h-7"></i>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Smart Street Safety Pole</h1>
+      <p class="text-xs text-slate-400 mt-1">Municipal IoT Safety & Emergency Response Platform</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-slate-800/90 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6">
+      
+      <!-- Tab Navigation -->
+      <div id="auth-tab-buttons" class="flex p-1 bg-slate-900/80 rounded-xl border border-slate-700/60">
+        <button id="tab-login-btn" type="button" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">
+          Sign In
+        </button>
+        <button id="tab-signup-btn" type="button" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="auth-status-alert" class="hidden p-3.5 rounded-xl text-xs font-medium border flex items-start gap-2.5">
+        <i id="auth-alert-icon" data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <div id="auth-alert-text" class="flex-1 leading-relaxed"></div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- VIEW 1: SIGN IN FORM                           -->
+      <!-- ============================================== -->
+      <form id="form-login" class="space-y-4">
+        <div>
+          <label for="login-email" class="block text-xs font-semibold text-slate-300 mb-1.5">Officer / Operator Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="mail" class="w-4 h-4"></i>
+            </span>
+            <input type="email" id="login-email" placeholder="officer@smartpole.gov" required autocomplete="username"
+              class="w-full pl-10 pr-3.5 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="login-password" class="block text-xs font-semibold text-slate-300">Password</label>
+            <button type="button" id="btn-forgot-password" class="text-xs text-blue-400 hover:text-blue-300 transition">Forgot?</button>
+          </div>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </span>
+            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password"
+              class="w-full pl-10 pr-10 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            <button type="button" id="btn-toggle-login-pwd" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition">
+              <i data-lucide="eye" class="w-4 h-4" id="eye-login"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="remember-me" checked class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900">
+            <span>Remember authentication</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btn-submit-login"
+          class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 transition duration-150 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+          <span>Sign In to Safety Console</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Quick Demo Credentials for Review -->
+        <div class="pt-3 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+          <span>Admin Demo Account:</span>
+          <button type="button" id="btn-fill-admin" class="text-blue-400 hover:underline font-mono">admin@smartpole.gov</button>
+        </div>
+      </form>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: SIGN UP FORM                           -->
+      <!-- ============================================== -->
+      <form id="form-signup" class="space-y-4 hidden">
+        <div>
+          <label for="signup-name" class="block text-xs font-semibold text-slate-300 mb-1.5">Full Legal Name</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </span>
+            <input type="text" id="signup-name" placeholder="Alex Morgan" required autocomplete="name"
+              class="w-full pl-10 pr-3.5 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <div>
+          <label for="signup-email" class="block text-xs font-semibold text-slate-300 mb-1.5">Official Email Address</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="mail" class="w-4 h-4"></i>
+            </span>
+            <input type="email" id="signup-email" placeholder="name@smartpole.gov" required autocomplete="email"
+              class="w-full pl-10 pr-3.5 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <div>
+          <label for="signup-role" class="block text-xs font-semibold text-slate-300 mb-1.5">Department / Role</label>
+          <select id="signup-role" class="w-full px-3.5 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            <option value="Safety Monitoring Operator">Safety Monitoring Operator</option>
+            <option value="Emergency Response Dispatcher">Emergency Response Dispatcher</option>
+            <option value="Field Inspection Officer">Field Inspection Officer</option>
+            <option value="Municipal Engineer">Municipal Infrastructure Engineer</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="signup-password" class="block text-xs font-semibold text-slate-300 mb-1.5">Password (Min 6 Characters)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </span>
+            <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required autocomplete="new-password"
+              class="w-full pl-10 pr-10 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            <button type="button" id="btn-toggle-signup-pwd" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition">
+              <i data-lucide="eye" class="w-4 h-4" id="eye-signup"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label for="signup-confirm-password" class="block text-xs font-semibold text-slate-300 mb-1.5">Confirm Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i data-lucide="check-check" class="w-4 h-4"></i>
+            </span>
+            <input type="password" id="signup-confirm-password" placeholder="••••••••" minlength="6" required autocomplete="new-password"
+              class="w-full pl-10 pr-3.5 py-2.5 bg-slate-900/80 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <!-- Role Security Disclosure -->
+        <div class="p-3 rounded-xl bg-blue-950/40 border border-blue-800/40 text-[11px] text-blue-300 space-y-1">
+          <div class="font-semibold flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>Municipal Access Security</span>
+          </div>
+          <p class="text-blue-300/80 leading-relaxed">
+            New officer registrations receive pending authorization status. An authorized municipal administrator must verify and activate your console credentials.
+          </p>
+        </div>
+
+        <button type="submit" id="btn-submit-signup"
+          class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 transition duration-150 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+          <span>Create Officer Account</span>
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+        </button>
+      </form>
+
+      <!-- ============================================== -->
+      <!-- VIEW 3: PENDING APPROVAL NOTIFICATION          -->
+      <!-- ============================================== -->
+      <div id="view-pending-approval" class="hidden text-center py-4 space-y-4">
+        <div class="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 mx-auto flex items-center justify-center">
+          <i data-lucide="clock" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">Pending Municipal Approval</h3>
+          <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+            Your officer account (<span id="pending-user-email" class="font-mono text-amber-300"></span>) has been recorded in the Firebase Realtime Database. A municipal administrator must approve your credentials before safety monitoring can be accessed.
+          </p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 text-left text-xs space-y-1.5">
+          <div class="flex justify-between text-slate-400">
+            <span>Status:</span>
+            <span class="font-semibold text-amber-400">Pending Authorization</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Registered:</span>
+            <span id="pending-reg-date" class="font-mono text-slate-300">Just now</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 pt-2">
+          <button id="btn-pending-refresh" type="button" class="flex-1 py-2 px-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-white transition">
+            Check Status
+          </button>
+          <button id="btn-pending-signout" type="button" class="flex-1 py-2 px-3 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition">
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Copyright -->
+    <p class="text-center text-[11px] text-slate-500 mt-6">
+      Smart Street Safety Pole IoT Monitoring System • Municipal Operations
+    </p>
+
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="modal-forgot-password" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="key-round" class="w-4 h-4 text-blue-400"></i>
+          <span>Reset Password</span>
+        </h3>
+        <button id="btn-close-forgot-modal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Enter your registered municipal email to receive password reset instructions.
+      </p>
+      <form id="form-forgot-password" class="space-y-3">
+        <input type="email" id="forgot-email" placeholder="name@smartpole.gov" required
+          class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="submit" id="btn-submit-forgot"
+          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition">
+          Send Reset Link
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client-Side Authentication Logic -->
+  <script>
+    // Initialize Lucide Icons
+    if (window.lucide) lucide.createIcons();
+
+    // Elements
+    const tabLoginBtn = document.getElementById('tab-login-btn');
+    const tabSignupBtn = document.getElementById('tab-signup-btn');
+    const formLogin = document.getElementById('form-login');
+    const formSignup = document.getElementById('form-signup');
+    const viewPending = document.getElementById('view-pending-approval');
+    const alertBox = document.getElementById('auth-status-alert');
+    const alertText = document.getElementById('auth-alert-text');
+    const alertIcon = document.getElementById('auth-alert-icon');
+    const modalForgot = document.getElementById('modal-forgot-password');
+    const btnForgot = document.getElementById('btn-forgot-password');
+    const btnCloseForgot = document.getElementById('btn-close-forgot-modal');
+    const formForgot = document.getElementById('form-forgot-password');
+    const btnFillAdmin = document.getElementById('btn-fill-admin');
+
+    function showAlert(msg, type = 'error') {
+      alertBox.classList.remove('hidden', 'bg-red-500/10', 'border-red-500/40', 'text-red-300', 'bg-emerald-500/10', 'border-emerald-500/40', 'text-emerald-300', 'bg-amber-500/10', 'border-amber-500/40', 'text-amber-300');
+      
+      if (type === 'error') {
+        alertBox.classList.add('bg-red-500/10', 'border-red-500/40', 'text-red-300');
+        alertIcon.setAttribute('data-lucide', 'alert-circle');
+      } else if (type === 'success') {
+        alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/40', 'text-emerald-300');
+        alertIcon.setAttribute('data-lucide', 'check-circle-2');
+      } else {
+        alertBox.classList.add('bg-amber-500/10', 'border-amber-500/40', 'text-amber-300');
+        alertIcon.setAttribute('data-lucide', 'info');
+      }
+      
+      alertText.textContent = msg;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function clearAlert() {
+      alertBox.classList.add('hidden');
+    }
+
+    // Tab Switching
+    function setTab(tab) {
+      clearAlert();
+      viewPending.classList.add('hidden');
+      if (tab === 'login') {
+        formLogin.classList.remove('hidden');
+        formSignup.classList.add('hidden');
+        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
+        tabSignupBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+      } else {
+        formLogin.classList.add('hidden');
+        formSignup.classList.remove('hidden');
+        tabSignupBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
+        tabLoginBtn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+      }
+    }
+
+    tabLoginBtn.addEventListener('click', () => setTab('login'));
+    tabSignupBtn.addEventListener('click', () => setTab('signup'));
+
+    // Password Visibility Toggles
+    const toggleLoginPwd = document.getElementById('btn-toggle-login-pwd');
+    const loginPwdInput = document.getElementById('login-password');
+    const eyeLogin = document.getElementById('eye-login');
+    toggleLoginPwd.addEventListener('click', () => {
+      const isPwd = loginPwdInput.type === 'password';
+      loginPwdInput.type = isPwd ? 'text' : 'password';
+      eyeLogin.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
+      if (window.lucide) lucide.createIcons();
+    });
+
+    const toggleSignupPwd = document.getElementById('btn-toggle-signup-pwd');
+    const signupPwdInput = document.getElementById('signup-password');
+    const eyeSignup = document.getElementById('eye-signup');
+    toggleSignupPwd.addEventListener('click', () => {
+      const isPwd = signupPwdInput.type === 'password';
+      signupPwdInput.type = isPwd ? 'text' : 'password';
+      eyeSignup.setAttribute('data-lucide', isPwd ? 'eye-off' : 'eye');
+      if (window.lucide) lucide.createIcons();
+    });
+
+    // Auto-fill demo admin credentials
+    if (btnFillAdmin) {
+      btnFillAdmin.addEventListener('click', () => {
+        document.getElementById('login-email').value = 'admin@smartpole.gov';
+        document.getElementById('login-password').value = 'admin1234';
+        clearAlert();
+      });
+    }
+
+    // Forgot Password Modal
+    btnForgot.addEventListener('click', () => {
+      modalForgot.classList.remove('hidden');
+      document.getElementById('forgot-email').value = document.getElementById('login-email').value || '';
+    });
+    btnCloseForgot.addEventListener('click', () => modalForgot.classList.add('hidden'));
+
+    formForgot.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value.trim();
+      const btn = document.getElementById('btn-submit-forgot');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/auth/password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const d = await res.json();
+        modalForgot.classList.add('hidden');
+        showAlert(d.message || `Password reset instructions sent to ${email}`, 'success');
+      } catch (err) {
+        showAlert('Could not process password reset request', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Reset Link';
+      }
+    });
+
+    // Check existing auth session on load
+    try {
+      const existing = localStorage.getItem('smartpole_auth_session') || sessionStorage.getItem('smartpole_auth_session');
+      if (existing) {
+        const user = JSON.parse(existing);
+        if (user && user.email) {
+          if (user.status === 'pending_approval') {
+            showPendingScreen(user);
+          } else {
+            window.location.href = 'index.html#dashboard';
+          }
+        }
+      }
+    } catch (_) {}
+
+    function showPendingScreen(user) {
+      formLogin.classList.add('hidden');
+      formSignup.classList.add('hidden');
+      document.getElementById('auth-tab-buttons').classList.add('hidden');
+      viewPending.classList.remove('hidden');
+      document.getElementById('pending-user-email').textContent = user.email;
+      document.getElementById('pending-reg-date').textContent = new Date(user.createdAt || Date.now()).toLocaleTimeString();
+    }
+
+    document.getElementById('btn-pending-signout').addEventListener('click', () => {
+      localStorage.removeItem('smartpole_auth_session');
+      sessionStorage.removeItem('smartpole_auth_session');
+      window.location.reload();
+    });
+
+    document.getElementById('btn-pending-refresh').addEventListener('click', async () => {
+      const raw = localStorage.getItem('smartpole_auth_session') || sessionStorage.getItem('smartpole_auth_session');
+      if (!raw) return window.location.reload();
+      const user = JSON.parse(raw);
+      showAlert('Checking municipal approval status...', 'info');
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email })
+        });
+        const d = await res.json();
+        if (d.success && d.user) {
+          if (d.user.status === 'approved') {
+            localStorage.setItem('smartpole_auth_session', JSON.stringify(d.user));
+            showAlert('Access Approved! Redirecting to dashboard...', 'success');
+            setTimeout(() => { window.location.href = 'index.html#dashboard'; }, 800);
+          } else {
+            showAlert('Account still pending administrative review.', 'error');
+          }
+        }
+      } catch (_) {
+        showAlert('Could not verify status with authority server.', 'error');
+      }
+    });
+
+    // Handle Login Submit
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const remember = document.getElementById('remember-me').checked;
+      const btn = document.getElementById('btn-submit-login');
+      const origText = btn.innerHTML;
+
+      if (!email || !password) {
+        showAlert('Please provide both email and password.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verifying credentials...</span>';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const d = await res.json();
+
+        if (d.success && d.user) {
+          const user = d.user;
+          const storage = remember ? localStorage : sessionStorage;
+          storage.setItem('smartpole_auth_session', JSON.stringify(user));
+          storage.setItem('smartpole_user', JSON.stringify(user));
+          // Clean other storage to avoid conflict
+          (remember ? sessionStorage : localStorage).removeItem('smartpole_auth_session');
+          (remember ? sessionStorage : localStorage).removeItem('smartpole_user');
+
+          if (user.status === 'pending_approval') {
+            showPendingScreen(user);
+          } else {
+            showAlert(`Authenticated as ${user.name || user.email}! Entering console...`, 'success');
+            setTimeout(() => {
+              window.location.href = 'index.html#dashboard';
+            }, 600);
+          }
+        } else {
+          showAlert(d.error || 'Invalid authority credentials. Check email and password.', 'error');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        showAlert('Could not connect to authority authentication server.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+
+    // Handle Signup Submit
+    formSignup.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const role = document.getElementById('signup-role').value;
+      const password = document.getElementById('signup-password').value;
+      const confirmPassword = document.getElementById('signup-confirm-password').value;
+      const btn = document.getElementById('btn-submit-signup');
+      const origText = btn.innerHTML;
+
+      if (!name || !email || !password || !confirmPassword) {
+        showAlert('All fields are required for officer registration.', 'error');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAlert('Password must contain at least 6 characters.', 'error');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showAlert('Passwords do not match. Please re-enter identical passwords.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Registering officer profile...</span>';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role })
+        });
+        const d = await res.json();
+
+        if (d.success && d.user) {
+          localStorage.setItem('smartpole_auth_session', JSON.stringify(d.user));
+          localStorage.setItem('smartpole_user', JSON.stringify(d.user));
+          if (d.user.status === 'pending_approval') {
+            showPendingScreen(d.user);
+          } else {
+            showAlert('Registration complete! Entering dashboard...', 'success');
+            setTimeout(() => {
+              window.location.href = 'index.html#dashboard';
+            }, 800);
+          }
+        } else {
+          showAlert(d.error || 'Registration failed. Please check inputs.', 'error');
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        showAlert('Could not register account. Network error.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

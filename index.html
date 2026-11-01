@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Street Safety Pole — Municipal Safety Platform</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              800: '#1e293b',
+              900: '#0f172a',
+              950: '#020617',
+            },
+            status: {
+              normal: '#10b981',
+              warning: '#f59e0b',
+              critical: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK (Compat v10 for instant client-side execution) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="h-full font-sans text-slate-800 antialiased bg-slate-50 flex flex-col">
+
+  <!-- ========================================================= -->
+  <!-- PUBLIC NAVIGATION (Visible on Landing Page)               -->
+  <!-- ========================================================= -->
+  <nav id="public-navbar" class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <a href="#landing" class="flex items-center gap-3 group">
+          <div
+            class="w-10 h-10 rounded-xl bg-navy-900 text-white flex items-center justify-center shadow-sm group-hover:bg-slate-800 transition">
+            <i data-lucide="shield-check" class="w-6 h-6 text-emerald-400"></i>
+          </div>
+          <div>
+            <span class="text-base font-bold text-navy-900 tracking-tight block leading-tight">Smart Street Safety
+              Pole</span>
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block">Municipal Safety
+              Platform</span>
+          </div>
+        </a>
+
+        <!-- Links -->
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+          <a href="#landing" class="hover:text-navy-900 transition">Home</a>
+          <a href="#features" class="hover:text-navy-900 transition">Features</a>
+          <a href="#how-it-works" class="hover:text-navy-900 transition">How It Works</a>
+          <a href="#about" class="hover:text-navy-900 transition">About Project</a>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-3">
+          <!-- Hardware Live Badge -->
+          <div id="hardware-pill"
+            class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Pole #01 Live</span>
+          </div>
+
+          <a href="#dashboard"
+            class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-navy-900 hover:bg-slate-800 shadow-sm transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Live Dashboard</span>
+          </a>
+
+          <a href="#portal" id="btn-open-login"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+            <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
+            <span id="nav-user-label">Sign In</span>
+          </a>
+
+          <!-- Theme Switcher (Far Right Corner) -->
+          <button id="btn-theme-toggle"
+            class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+            title="Toggle Dark/Light Mode">
+            <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Mobile Hamburger Button -->
+          <button id="btn-mobile-menu"
+            class="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+            aria-label="Toggle Navigation Menu">
+            <i data-lucide="menu" id="mobile-menu-icon" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Dropdown -->
+    <div id="mobile-nav-dropdown"
+      class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 shadow-xl">
+      <div class="flex flex-col space-y-1 text-sm font-medium text-slate-700">
+        <a href="#landing" class="mobile-nav-link px-3 py-2 rounded-lg hover:bg-slate-100 transition">Home</a>
+        <a href="#features" class="mobile-nav-link px-3 py-2 rounded-lg hover:bg-slate-100 transition">Features</a>
+        <a href="#how-it-works" class="mobile-nav-link px-3 py-2 rounded-lg hover:bg-slate-100 transition">How It
+          Works</a>
+        <a href="#about" class="mobile-nav-link px-3 py-2 rounded-lg hover:bg-slate-100 transition">About Project</a>
+        <a href="#portal" class="mobile-nav-link px-3 py-2 rounded-lg hover:bg-slate-100 transition">Sign In / Register</a>
+      </div>
+      <div class="pt-3 border-t border-slate-200 flex flex-col gap-2">
+        <a href="#dashboard"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-navy-900 hover:bg-slate-800 shadow-sm transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Open Live Dashboard</span>
+        </a>
+        <a href="#portal" id="btn-mobile-open-login"
+          class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 border border-slate-200 transition">
+          <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
+          <span>Sign In / Create Account</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================================= -->
+  <!-- 1. LANDING PAGE VIEW                                      -->
+  <!-- ========================================================= -->
+  <div id="view-landing" class="flex-1 flex flex-col">
+
+    <!-- Hero Section with Aurora Background -->
+    <section
+      class="relative pt-12 pb-20 md:pt-20 md:pb-28 bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800 overflow-hidden">
+      <!-- Aurora Animated Background Layer -->
+      <div class="aurora-container">
+        <div class="aurora-bg"></div>
+      </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+          <!-- Text Content -->
+          <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+              <i data-lucide="radio" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span>IoT-Driven Public Safety Infrastructure</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-navy-900 leading-[1.15]">
+              Smarter Streets.<br>
+              <span class="text-blue-900">Safer Communities.</span>
+            </h1>
+
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+              An integrated IoT-based street safety system that detects emergencies and alerts authorities in real time.
+              Combining vision-based accident detection, combustible gas leakage monitoring, and an emergency SOS button
+              into one centralized municipal surveillance network.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <a href="#dashboard"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold text-white bg-navy-900 hover:bg-slate-800 shadow-md shadow-navy-900/10 transition">
+                <span>Open Dashboard</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </a>
+              <a href="#features"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition">
+                <i data-lucide="layers" class="w-4 h-4 text-slate-500"></i>
+                <span>Explore Features</span>
+              </a>
+            </div>
+
+            <!-- Interactive Key Quick Stats -->
+            <div class="grid grid-cols-3 gap-3 pt-6 max-w-lg mx-auto lg:mx-0 border-t border-slate-200">
+              <a href="#dashboard"
+                class="p-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-400 transition text-left group">
+                <p id="hero-stat-poles" class="text-2xl font-bold text-navy-900 group-hover:text-blue-600 transition">1
+                </p>
+                <p class="text-xs font-medium text-slate-500">Active Safety Pole</p>
+                <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hardware Live
+                </span>
+              </a>
+              <a href="#dashboard"
+                class="p-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-red-400 transition text-left group">
+                <p id="hero-stat-incidents"
+                  class="text-2xl font-bold text-navy-900 group-hover:text-red-600 transition">0</p>
+                <p class="text-xs font-medium text-slate-500">Incidents Logged</p>
+                <span class="text-[10px] text-slate-400 font-semibold mt-0.5 block">Audit Trail</span>
+              </a>
+              <a href="#dashboard"
+                class="p-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-400 transition text-left group">
+                <p id="hero-stat-resolved"
+                  class="text-2xl font-bold text-navy-900 group-hover:text-emerald-600 transition">0</p>
+                <p class="text-xs font-medium text-slate-500">Alerts Resolved</p>
+                <span class="text-[10px] text-slate-400 font-semibold mt-0.5 block">Verified Cases</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Smart Pole Live Video Demonstration -->
+          <div class="lg:col-span-5 flex justify-center">
+            <div
+              class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none p-5 relative">
+              
+              <!-- Video Card Header -->
+              <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Live Hardware Demonstration</span>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">Pole #01 Prototype</span>
+              </div>
+
+              <!-- Video Player Container with Ambient Glow -->
+              <div class="py-3.5">
+                <div class="relative w-full rounded-xl overflow-hidden bg-black border border-slate-200 dark:border-slate-800 shadow-md group">
+                  <video id="landing-hero-video"
+                    src="/smartpole_demo.mp4"
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                    preload="auto"
+                    class="w-full h-auto aspect-[9/16] sm:aspect-video object-cover max-h-[360px] mx-auto block cursor-pointer">
+                    Your browser does not support the video tag.
+                  </video>
+
+                  <!-- Video Overlay Badges & Controls -->
+                  <div class="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase border border-white/20 pointer-events-none">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span>Live Hardware Demo</span>
+                  </div>
+
+                  <div class="absolute bottom-3 right-3 flex items-center gap-2">
+                    <button id="btn-toggle-video-sound" type="button"
+                      class="p-2 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs border border-white/20 transition active:scale-95"
+                      title="Toggle Sound">
+                      <i data-lucide="volume-x" id="video-sound-icon" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button id="btn-toggle-video-play" type="button"
+                      class="p-2 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md text-white text-xs border border-white/20 transition active:scale-95"
+                      title="Play / Pause">
+                      <i data-lucide="pause" id="video-play-icon" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Status Footer inside card -->
+              <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+                <div class="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                  <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">LDR Streetlight</span>
+                  <span id="hero-light-status" class="font-bold text-slate-800 dark:text-slate-200 text-xs">Auto (Pin 32)</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                  <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Gas Reading</span>
+                  <span id="hero-gas-status" class="font-bold text-emerald-600 dark:text-emerald-400 text-xs">562 ppm (Clean)</span>
+                </div>
+              </div>
+
+              <!-- Live Verification Footer -->
+              <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                  <span>Physical Unit Verified</span>
+                </div>
+                <a href="#dashboard" class="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                  <span>Open Console</span>
+                  <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                </a>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- User Access Portal (Sign In / Register) -->
+    <section id="portal" class="py-12 md:py-16 bg-slate-50 border-b border-slate-200">
+      <div class="max-w-md mx-auto px-4">
+        <div class="text-center mb-6">
+          <span class="text-xs font-semibold text-blue-600 tracking-wider uppercase block mb-1">User Portal</span>
+          <h2 class="text-2xl font-bold text-navy-900 tracking-tight">Safety Platform Access</h2>
+          <p class="text-xs text-slate-500 mt-1">Sign in or create an account to monitor municipal safety poles</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden p-6 space-y-5">
+          <div id="auth-tab-bar" class="flex p-1 bg-slate-100 rounded-xl">
+            <button id="tab-btn-signin" type="button" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-white text-navy-900 shadow-sm transition">Sign In</button>
+            <button id="tab-btn-signup" type="button" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-500 hover:text-slate-800 transition">Create Account</button>
+          </div>
+          <form id="form-landing-signin" class="space-y-4">
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Email Address</label>
+              <input type="email" id="signin-email" placeholder="name@domain.com" required class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Password</label>
+              <input type="password" id="signin-password" placeholder="••••••••" required class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <button type="submit" id="btn-submit-signin" class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-navy-900 hover:bg-slate-800 transition">Sign In to Platform</button>
+          </form>
+          <form id="form-landing-signup" class="space-y-4 hidden">
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Full Name</label>
+              <input type="text" id="signup-name" placeholder="Alex Morgan" required class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Email Address</label>
+              <input type="email" id="signup-email" placeholder="name@domain.com" required class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Password</label>
+              <input type="password" id="signup-password" placeholder="At least 6 characters" minlength="6" required class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-slate-700 block mb-1">Role / Account Type</label>
+              <select id="signup-role" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+                <option value="Operator">Safety Monitoring Operator</option>
+                <option value="Administrator">Municipal Administrator</option>
+                <option value="Emergency Responder">First Responder</option>
+                <option value="Citizen">Civic Observer</option>
+              </select>
+            </div>
+            <button type="submit" id="btn-submit-signup" class="w-full py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">Create Account & Enter</button>
+          </form>
+          <div id="landing-user-profile-card" class="hidden text-center py-2 space-y-3">
+            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 mx-auto flex items-center justify-center font-bold text-lg" id="landing-user-avatar">U</div>
+            <div>
+              <h4 id="landing-user-name" class="font-bold text-navy-900 text-base">User Name</h4>
+              <p id="landing-user-email" class="text-xs text-slate-500">user@example.com</p>
+              <span id="landing-user-role" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 mt-1">Operator</span>
+            </div>
+            <div class="pt-2 flex items-center justify-center gap-3">
+              <a href="#dashboard" class="px-4 py-2 rounded-xl text-xs font-semibold bg-navy-900 hover:bg-slate-800 text-white transition">Enter Dashboard</a>
+              <button id="btn-landing-logout" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 md:py-24 bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <h2 class="text-xs font-semibold text-blue-700 tracking-wider uppercase mb-2">Integrated Safety Modules</h2>
+          <p class="text-3xl font-bold tracking-tight text-navy-900 sm:text-4xl">Core Municipal Safety Features</p>
+          <p class="mt-4 text-base text-slate-600">Three high-priority safety technologies unified into a single
+            street-level IoT device, eliminating surveillance blindspots.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+          <!-- Feature 1: AI Camera -->
+          <div
+            class="bg-slate-50 border border-slate-200 rounded-2xl p-8 hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center mb-6">
+                <i data-lucide="camera" class="w-6 h-6"></i>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-navy-900">AI Camera Detection</h3>
+                <span
+                  class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">Active</span>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                Detects possible road accidents, vehicle collisions, and physical impact using real-time computer vision
+                and pole tilt accelerometers.
+              </p>
+              <ul class="text-xs space-y-2 text-slate-500 border-t border-slate-200 pt-4 mb-6">
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Generates alerts with supporting visual evidence</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Zero-lag HVGA snapshot capture on trigger</span>
+                </li>
+              </ul>
+            </div>
+            <a href="#dashboard"
+              class="feature-goto-tab inline-flex items-center gap-2 text-xs font-semibold text-blue-700 hover:text-blue-900 pt-2"
+              data-tab="tab-camera">
+              <span>Inspect Camera Detection</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+          <!-- Feature 2: Gas Detection -->
+          <div
+            class="bg-slate-50 border border-slate-200 rounded-2xl p-8 hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center mb-6">
+                <i data-lucide="wind" class="w-6 h-6"></i>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-navy-900">Gas Detection</h3>
+                <span id="feature-gas-badge"
+                  class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">Normal</span>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                Monitors surrounding air for abnormal combustible gas levels, LPG leakage, and heavy industrial smoke
+                plumes before catastrophe occurs.
+              </p>
+              <ul class="text-xs space-y-2 text-slate-500 border-t border-slate-200 pt-4 mb-6">
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Triggers alert when threshold exceeds 1800 ppm</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Live Reading: <strong id="feature-gas-reading" class="text-slate-800 font-mono">562</strong>
+                    ppm</span>
+                </li>
+              </ul>
+            </div>
+            <a href="#dashboard"
+              class="feature-goto-tab inline-flex items-center gap-2 text-xs font-semibold text-amber-700 hover:text-amber-900 pt-2"
+              data-tab="tab-gas">
+              <span>Inspect Gas Monitoring</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+          <!-- Feature 3: Emergency SOS -->
+          <div
+            class="bg-slate-50 border border-slate-200 rounded-2xl p-8 hover:shadow-lg hover:-translate-y-1 transition duration-200 flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-red-100 text-red-700 flex items-center justify-center mb-6">
+                <i data-lucide="bell-ring" class="w-6 h-6"></i>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-navy-900">Emergency SOS</h3>
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">Armed</span>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                Allows pedestrians and citizens to manually trigger an instant priority distress alert directly to local
+                police and emergency teams.
+              </p>
+              <ul class="text-xs space-y-2 text-slate-500 border-t border-slate-200 pt-4 mb-6">
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Immediate high-priority alert to centralized dashboard</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Transmits precise GPS coordinates & snaps live photo</span>
+                </li>
+              </ul>
+            </div>
+            <a href="#dashboard"
+              class="feature-goto-tab inline-flex items-center gap-2 text-xs font-semibold text-red-700 hover:text-red-900 pt-2"
+              data-tab="tab-sos">
+              <span>Inspect SOS Reports</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-16 md:py-24 bg-slate-50 border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <h2 class="text-xs font-semibold text-blue-700 tracking-wider uppercase mb-2">Architecture Pipeline</h2>
+          <p class="text-3xl font-bold tracking-tight text-navy-900 sm:text-4xl">How The System Works</p>
+          <p class="mt-4 text-base text-slate-600">Click any stage in the distributed IoT pipeline to inspect edge
+            processing, data sync, and dispatch handling.</p>
+        </div>
+
+        <!-- 5-Step Process Flow with Interactive Click States -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+
+          <!-- Step 1 -->
+          <div
+            class="workflow-step-btn cursor-pointer bg-white rounded-xl p-5 border-2 border-blue-500 shadow-sm relative text-center hover:shadow-md transition"
+            data-step="1">
+            <div
+              class="step-num w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center mx-auto mb-3">
+              1</div>
+            <i data-lucide="cpu" class="w-6 h-6 text-slate-700 mx-auto mb-2"></i>
+            <h4 class="text-sm font-bold text-navy-900">Sensor Layer</h4>
+            <p class="text-xs text-slate-500 mt-1">Camera, MQ-2 Gas, SOS Button & MPU-6050 capture events.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div
+            class="workflow-step-btn cursor-pointer bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative text-center hover:shadow-md hover:border-slate-300 transition"
+            data-step="2">
+            <div
+              class="step-num w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center mx-auto mb-3">
+              2</div>
+            <i data-lucide="microchip" class="w-6 h-6 text-slate-700 mx-auto mb-2"></i>
+            <h4 class="text-sm font-bold text-navy-900">ESP32 Edge</h4>
+            <p class="text-xs text-slate-500 mt-1">Dual-core controller filters signals, triggers relay & siren.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div
+            class="workflow-step-btn cursor-pointer bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative text-center hover:shadow-md hover:border-slate-300 transition"
+            data-step="3">
+            <div
+              class="step-num w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center mx-auto mb-3">
+              3</div>
+            <i data-lucide="cloud" class="w-6 h-6 text-slate-700 mx-auto mb-2"></i>
+            <h4 class="text-sm font-bold text-navy-900">Cloud Sync</h4>
+            <p class="text-xs text-slate-500 mt-1">Firebase Firestore & Node.js backend log incident case.</p>
+          </div>
+
+          <!-- Step 4 -->
+          <div
+            class="workflow-step-btn cursor-pointer bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative text-center hover:shadow-md hover:border-slate-300 transition"
+            data-step="4">
+            <div
+              class="step-num w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center mx-auto mb-3">
+              4</div>
+            <i data-lucide="monitor" class="w-6 h-6 text-slate-700 mx-auto mb-2"></i>
+            <h4 class="text-sm font-bold text-navy-900">Safety Dashboard</h4>
+            <p class="text-xs text-slate-500 mt-1">Real-time alerts, visual evidence & incident map display.</p>
+          </div>
+
+          <!-- Step 5 -->
+          <div
+            class="workflow-step-btn cursor-pointer bg-white rounded-xl p-5 border border-slate-200 shadow-sm relative text-center hover:shadow-md hover:border-slate-300 transition"
+            data-step="5">
+            <div
+              class="step-num w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center mx-auto mb-3">
+              5</div>
+            <i data-lucide="siren" class="w-6 h-6 text-red-600 mx-auto mb-2"></i>
+            <h4 class="text-sm font-bold text-navy-900">Authorities</h4>
+            <p class="text-xs text-slate-500 mt-1">Police, Fire & Medical teams dispatched with exact GPS coordinates.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Interactive Step Explanation Panel -->
+        <div id="workflow-details-box"
+          class="mt-8 bg-white rounded-xl p-6 border border-slate-200 shadow-sm transition-all">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-100 gap-2">
+            <div class="flex items-center gap-3">
+              <span id="wf-badge-step"
+                class="w-7 h-7 rounded-full bg-blue-100 text-blue-900 font-bold text-xs flex items-center justify-center">1</span>
+              <div>
+                <h4 id="wf-title" class="text-sm font-bold text-navy-900">Stage 1: Sensor Layer (Real-time Telemetry
+                  Acquisition)</h4>
+                <p id="wf-subtitle" class="text-xs text-slate-500">Autonomous continuous sampling from low-latency
+                  sensors</p>
+              </div>
+            </div>
+            <span id="wf-protocol"
+              class="px-2.5 py-1 rounded text-xs font-mono font-medium bg-slate-100 text-slate-700">I2C + ADC +
+              GPIO</span>
+          </div>
+          <p id="wf-desc" class="text-xs text-slate-600 leading-relaxed">
+            The safety pole's peripheral suite operates concurrently: the MPU-6050 samples tilt angles and collision
+            jerk over I2C at 200ms intervals, the MQ-2 gas sensor streams analog voltage for combustible hydrocarbons,
+            and the citizen SOS panic button sits on a noise-filtered interrupt.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 md:py-24 bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+          <div class="lg:col-span-6 space-y-6">
+            <h2 class="text-xs font-semibold text-blue-700 tracking-wider uppercase">About The Project</h2>
+            <p class="text-3xl font-bold tracking-tight text-navy-900 sm:text-4xl">Unified Municipal Emergency Response
+            </p>
+            <p class="text-base text-slate-600 leading-relaxed">
+              Traditional city surveillance systems operate in isolation: CCTV cameras record without alerting, gas
+              leaks go unnoticed until ignited, and citizens in distress lack quick emergency contact points.
+            </p>
+            <p class="text-base text-slate-600 leading-relaxed">
+              The <strong>Smart Street Safety Pole</strong> integrates existing low-cost safety technologies into one
+              centralized platform. By leveraging edge microcontrollers and cloud synchronization, emergency response
+              times are reduced from several minutes to under three seconds.
+            </p>
+
+            <div class="grid grid-cols-2 gap-4 pt-4">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <i data-lucide="badge-check" class="w-5 h-5 text-emerald-600 mb-2"></i>
+                <h5 class="text-sm font-bold text-navy-900">Scalable Deployment</h5>
+                <p class="text-xs text-slate-500 mt-1">Designed for existing street lighting poles without costly civil
+                  excavation.</p>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <i data-lucide="shield" class="w-5 h-5 text-blue-600 mb-2"></i>
+                <h5 class="text-sm font-bold text-navy-900">Public Accountability</h5>
+                <p class="text-xs text-slate-500 mt-1">Every alert logs photographic evidence, exact GPS, and
+                  timestamped resolution.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6 bg-slate-50 border border-slate-200 rounded-2xl p-8">
+            <h3 class="text-lg font-bold text-navy-900 mb-4">Technical Specifications</h3>
+
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Core Controller</span>
+                <span class="font-medium text-slate-900">ESP32 Dual-Core 240MHz (Wi-Fi + BLE)</span>
+              </div>
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Vision System</span>
+                <span class="font-medium text-slate-900">ESP32-CAM OV3660 (HVGA MJPEG Stream)</span>
+              </div>
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Gas & Smoke Detection</span>
+                <span class="font-medium text-slate-900">MQ-2 Semiconductor Gas Sensor (ADC)</span>
+              </div>
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Impact & Tilt Tracking</span>
+                <span class="font-medium text-slate-900">MPU-6050 6-Axis Gyro & Accelerometer</span>
+              </div>
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Positioning Engine</span>
+                <span class="font-medium text-slate-900">NEO-6M GPS Receiver (NMEA 9600 baud)</span>
+              </div>
+              <div class="flex justify-between py-2 border-b border-slate-200">
+                <span class="text-slate-500">Emergency Dispatch Interface</span>
+                <span class="font-medium text-slate-900">Socket.IO Web Dashboard + Firebase Sync</span>
+              </div>
+            </div>
+
+            <div
+              class="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center gap-3">
+              <i data-lucide="info" class="w-5 h-5 flex-shrink-0 text-blue-700"></i>
+              <span>Hardware prototype is fully functional and streaming live data to this dashboard.</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Public Footer -->
+    <footer class="mt-auto bg-navy-900 text-slate-400 py-12 border-t border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div class="md:col-span-2 space-y-3">
+            <div class="flex items-center gap-2 text-white font-bold text-lg">
+              <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+              <span>Smart Street Safety Pole</span>
+            </div>
+            <p class="text-sm text-slate-400 max-w-sm">
+              Detect Early. Alert Faster. Protect Every Street. An integrated IoT public surveillance & emergency
+              response platform.
+            </p>
+          </div>
+          <div>
+            <h5 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Quick Navigation</h5>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#landing" class="hover:text-white transition">Home</a></li>
+              <li><a href="#dashboard" class="hover:text-white transition">Live Dashboard</a></li>
+              <li><a href="#features" class="hover:text-white transition">Features</a></li>
+              <li><a href="#how-it-works" class="hover:text-white transition">How It Works</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Project Information</h5>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              IoT Capstone Engineering Project.<br>
+              Municipal Safety Surveillance System.<br>
+              Contact: support@smartpole.gov
+            </p>
+          </div>
+        </div>
+        <div
+          class="pt-8 border-t border-slate-800 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p>© 2026 Smart Street Safety Pole Project. All rights reserved.</p>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>All System Services Operational</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+
+  <!-- ========================================================= -->
+  <!-- 2. MAIN MUNICIPAL MONITORING DASHBOARD                    -->
+  <!-- ========================================================= -->
+  <div id="view-dashboard" class="hidden flex-1 flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+      class="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 transition-all duration-300 z-30">
+
+      <!-- Sidebar Header -->
+      <div class="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
+        <a href="#landing" class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg bg-navy-900 text-white flex items-center justify-center flex-shrink-0">
+            <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <span class="sidebar-text text-sm font-bold text-navy-900 truncate">SafePole Central</span>
+        </a>
+        <button id="btn-toggle-sidebar" class="text-slate-400 hover:text-slate-600 p-1 rounded-md"
+          title="Toggle Sidebar">
+          <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <button data-tab="tab-overview"
+          class="sidebar-tab-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-navy-900 bg-slate-100">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-700 flex-shrink-0"></i>
+          <span class="sidebar-text">Overview</span>
+        </button>
+
+        <button data-tab="tab-live"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="video" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Live Monitoring</span>
+          <span class="ml-auto w-2 h-2 rounded-full bg-emerald-500 sidebar-text"></span>
+        </button>
+
+        <button data-tab="tab-camera"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="camera" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Camera Detection</span>
+        </button>
+
+        <button data-tab="tab-gas"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="wind" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Gas Monitoring</span>
+        </button>
+
+        <button data-tab="tab-calibration"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="crosshair" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Tilt Calibration</span>
+        </button>
+
+        <button data-tab="tab-locations"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="map-pin" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">GPS Location</span>
+        </button>
+
+        <button data-tab="tab-alerts"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Emergency Alerts</span>
+          <span id="sidebar-alert-badge"
+            class="ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 sidebar-text">0</span>
+        </button>
+
+        <button data-tab="tab-sos"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="bell-ring" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">SOS Reports</span>
+        </button>
+
+        <button data-tab="tab-profile"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="shield-check" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Officer Profile</span>
+        </button>
+
+        <button data-tab="tab-settings"
+          class="sidebar-tab-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-50 hover:text-navy-900">
+          <i data-lucide="settings" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+          <span class="sidebar-text">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-slate-200">
+        <a href="#landing"
+          class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4 flex-shrink-0"></i>
+          <span class="sidebar-text">Exit to Public Site</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Body -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Dashboard Top Header Bar -->
+      <header
+        class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 gap-4">
+        <!-- Left: Title & Global Search -->
+        <div class="flex items-center gap-4 flex-1 max-w-xl">
+          <div class="flex-shrink-0">
+            <h2 id="current-view-title" class="text-base font-bold text-navy-900 leading-tight">Dashboard Overview</h2>
+          </div>
+
+          <!-- Global Incident Search Input -->
+          <div class="relative flex-1 hidden md:block">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input id="global-search-input" type="text" placeholder="Search alerts, poles, cases..."
+              class="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 transition">
+          </div>
+        </div>
+
+        <!-- Right: Badges, Notification Bell, Theme Switcher, Profile -->
+        <div class="flex items-center gap-3">
+          <!-- ESP32 Controller IP pill -->
+          <div
+            class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 border border-slate-200 text-slate-700">
+            <span id="top-esp-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-slate-500">ESP32:</span>
+            <span id="top-esp-host" class="font-mono font-medium">10.250.176.230</span>
+          </div>
+
+          <!-- Camera Stream IP pill -->
+          <div
+            class="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 border border-slate-200 text-slate-700">
+            <span id="top-cam-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-slate-500">Camera:</span>
+            <span id="top-cam-host" class="font-mono font-medium">10.250.176.145</span>
+          </div>
+
+          <!-- Notification Bell with Interactive Dropdown -->
+          <div class="relative">
+            <button id="btn-notification-bell"
+              class="relative p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+              title="Emergency Notifications">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span id="notification-badge"
+                class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+            </button>
+
+            <!-- Dropdown List -->
+            <div id="notification-dropdown"
+              class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-2xl z-50 overflow-hidden">
+              <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <span class="text-xs font-bold text-navy-900">Incident Notifications</span>
+                <span id="notif-unread-count"
+                  class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Live</span>
+              </div>
+              <div id="notification-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100 text-xs">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Theme Switcher -->
+          <button id="btn-dash-theme-toggle"
+            class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+            title="Toggle Dark/Light Mode">
+            <i data-lucide="moon" id="dash-theme-icon" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Tab Content Container -->
+      <main class="flex-1 overflow-y-auto p-6 pb-20 space-y-6 overscroll-contain">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: OVERVIEW                                -->
+        <!-- ============================================== -->
+        <div id="tab-overview" class="tab-pane space-y-6">
+
+          <!-- 4 KPI Summary Cards (Interactive Navigation) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <!-- Card 1: Total Active Poles -->
+            <div id="kpi-card-poles"
+              class="cursor-pointer bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              title="Click to view Safety Pole Locations">
+              <div>
+                <p
+                  class="text-xs font-medium text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition">
+                  Total Active Poles</p>
+                <h3 id="kpi-total-poles" class="text-2xl font-bold text-navy-900 mt-1">1</h3>
+                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Hardware Pole #01 (Live)</span>
+                </p>
+              </div>
+              <div
+                class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+                <i data-lucide="radio-tower" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <!-- Card 2: Active Emergencies -->
+            <div id="kpi-card-emergencies"
+              class="cursor-pointer bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              title="Click to view Emergency Alerts">
+              <div>
+                <p
+                  class="text-xs font-medium text-slate-500 uppercase tracking-wider group-hover:text-red-600 transition">
+                  Active Emergencies</p>
+                <h3 id="kpi-active-emergencies" class="text-2xl font-bold text-red-600 mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Requiring immediate response</p>
+              </div>
+              <div
+                class="w-11 h-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center group-hover:bg-red-100 transition">
+                <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <!-- Card 3: Gas Warnings -->
+            <div id="kpi-card-gas"
+              class="cursor-pointer bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              title="Click to open Gas Monitoring">
+              <div>
+                <p
+                  class="text-xs font-medium text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition">
+                  Gas Warnings</p>
+                <h3 id="kpi-gas-warnings" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Threshold: &gt; 1800 ppm</p>
+              </div>
+              <div
+                class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-100 transition">
+                <i data-lucide="wind" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <!-- Card 4: Resolved Incidents -->
+            <div id="kpi-card-resolved"
+              class="cursor-pointer bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              title="Click to view Resolved Cases">
+              <div>
+                <p
+                  class="text-xs font-medium text-slate-500 uppercase tracking-wider group-hover:text-emerald-600 transition">
+                  Resolved Incidents</p>
+                <h3 id="kpi-resolved-incidents" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                <p class="text-xs text-slate-500 mt-1">Closed & verified cases</p>
+              </div>
+              <div
+                class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Incident Map & System Status Section -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Live Incident Map (8 Cols) -->
+            <div class="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col">
+              <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div>
+                  <h3 class="text-sm font-bold text-navy-900">Live Incident Map</h3>
+                  <p class="text-xs text-slate-500">Real-time GPS positions of municipal safety poles</p>
+                </div>
+                <!-- Map Legend -->
+                <div class="flex items-center gap-3 text-xs font-medium">
+                  <span class="inline-flex items-center gap-1"><span
+                      class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Normal</span>
+                  <span class="inline-flex items-center gap-1"><span
+                      class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Warning</span>
+                  <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                    Emergency</span>
+                </div>
+              </div>
+
+              <!-- Map Canvas -->
+              <div id="overview-map" class="mt-4 w-full h-[320px] rounded-lg border border-slate-200 bg-slate-100 z-0">
+              </div>
+            </div>
+
+            <!-- System Status (4 Cols) -->
+            <div
+              class="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+              <div>
+                <div class="pb-4 border-b border-slate-100">
+                  <h3 class="text-sm font-bold text-navy-900">System Status</h3>
+                  <p class="text-xs text-slate-500">IoT services health & diagnostics</p>
+                </div>
+
+                <div class="mt-4 space-y-4">
+                  <!-- 1. Camera Status -->
+                  <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700">
+                        <i data-lucide="camera" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold text-slate-900">Camera Stream</p>
+                        <p class="text-[11px] text-slate-500">ESP32-CAM OV3660</p>
+                      </div>
+                    </div>
+                    <span id="status-camera-badge"
+                      class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Online</span>
+                  </div>
+
+                  <!-- 2. Gas Sensor Status -->
+                  <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700">
+                        <i data-lucide="wind" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold text-slate-900">Gas Sensor</p>
+                        <p id="status-mq2-subtext" class="text-[11px] text-slate-500">MQ-2: 562 ppm</p>
+                      </div>
+                    </div>
+                    <span id="status-gas-badge"
+                      class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Normal</span>
+                  </div>
+
+                  <!-- 3. ESP32 Connection -->
+                  <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold text-slate-900">ESP32 Controller</p>
+                        <p class="text-[11px] text-slate-500">10.250.176.230</p>
+                      </div>
+                    </div>
+                    <span id="status-esp-badge"
+                      class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Online</span>
+                  </div>
+
+                  <!-- 4. Firebase Connection -->
+                  <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold text-slate-900">Firebase Cloud</p>
+                        <p id="status-firebase-subtext" class="text-[11px] text-slate-500">Realtime Evidence Sync</p>
+                      </div>
+                    </div>
+                    <span id="status-firebase-badge"
+                      class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Online</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Last sync note -->
+              <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+                <span class="text-[11px] text-slate-400">Telemetry polled every 2000 ms</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Recent Alerts Table -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div
+              class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 class="text-sm font-bold text-navy-900">Recent Alerts & Incidents</h3>
+                <p class="text-xs text-slate-500">Centralized log of safety events recorded across all monitoring poles
+                </p>
+              </div>
+
+              <!-- Filter & Sort Controls -->
+              <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button data-filter="all"
+                    class="table-filter-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-navy-900">All</button>
+                  <button data-filter="Critical"
+                    class="table-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50">Emergencies</button>
+                  <button data-filter="Warning"
+                    class="table-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50">Gas Warnings</button>
+                  <button data-filter="Resolved"
+                    class="table-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50">Resolved</button>
+                </div>
+
+                <!-- Sort Control -->
+                <div class="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                  <span class="text-xs text-slate-500 font-medium hidden sm:inline">Sort:</span>
+                  <select id="select-incident-sort" class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer transition">
+                    <option value="date-desc">Date (Newest First)</option>
+                    <option value="date-asc">Date (Oldest First)</option>
+                    <option value="id-desc">Incident ID (High to Low)</option>
+                    <option value="id-asc">Incident ID (Low to High)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto overflow-y-hidden">
+              <table class="w-full text-left text-xs">
+                <thead
+                  class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200 select-none">
+                  <tr>
+                    <th id="th-sort-id" class="px-5 py-3.5 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Incident ID">
+                      <div class="flex items-center gap-1.5">
+                        <span>Incident ID</span>
+                        <i id="sort-icon-id" data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900"></i>
+                      </div>
+                    </th>
+                    <th class="px-5 py-3.5">Incident Type</th>
+                    <th class="px-5 py-3.5">Location</th>
+                    <th id="th-sort-time" class="px-5 py-3.5 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Date">
+                      <div class="flex items-center gap-1.5">
+                        <span>Date & Time</span>
+                        <i id="sort-icon-time" data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900"></i>
+                      </div>
+                    </th>
+                    <th class="px-5 py-3.5">Severity</th>
+                    <th class="px-5 py-3.5">Status</th>
+                    <th class="px-5 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-alerts-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <!-- Injected via JavaScript from real & sample incidents -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 2: LIVE MONITORING                         -->
+        <!-- ============================================== -->
+        <div id="tab-live" class="tab-pane hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Live Camera Feed (7 cols) -->
+            <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                  <h3 class="text-sm font-bold text-navy-900">Live CCTV Stream (ESP32-CAM)</h3>
+                </div>
+                <span class="text-xs font-mono text-slate-500">HVGA 480x320</span>
+              </div>
+
+              <!-- Stream Wrapper -->
+              <div
+                class="relative bg-slate-900 rounded-lg overflow-hidden aspect-[4/3] flex items-center justify-center">
+                <img id="live-cam-img" src="/api/camera-stream" alt="Live Camera Stream"
+                  class="w-full h-full object-contain" crossorigin="anonymous">
+                <div id="cam-offline-overlay"
+                  class="hidden absolute inset-0 bg-slate-900/90 text-white flex flex-col items-center justify-center p-4 text-center">
+                  <i data-lucide="video-off" class="w-8 h-8 text-slate-400 mb-2"></i>
+                  <p class="text-sm font-semibold">Camera Stream Offline</p>
+                  <p class="text-xs text-slate-400 mt-1">Check that ESP32-CAM is powered at 10.250.176.145</p>
+                </div>
+
+                <!-- Live Recording Overlay Indicator -->
+                <div id="live-rec-indicator"
+                  class="hidden absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-600 text-white flex items-center gap-1.5 shadow-lg border border-red-400/50">
+                  <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                  <span id="live-rec-timer">REC 00:00</span>
+                </div>
+              </div>
+
+              <!-- Camera controls -->
+              <div class="flex items-center justify-between text-xs pt-2">
+                <span class="text-slate-500">Direct MJPEG Stream via Node Proxy</span>
+                <div class="flex items-center gap-2">
+                  <button id="btn-refresh-stream"
+                    class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition">
+                    Refresh Stream
+                  </button>
+                  <button id="btn-record-video"
+                    class="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-medium flex items-center gap-1.5 transition"
+                    title="Record CCTV video clip from live stream">
+                    <span id="rec-dot-icon" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="rec-btn-text">Start Record</span>
+                  </button>
+                  <button id="btn-capture-snapshot"
+                    class="px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-slate-800 text-white font-medium transition">
+                    Capture Photo
+                  </button>
+                </div>
+              </div>
+
+              <!-- Recorded Video Preview & Download Card -->
+              <div id="cam-video-row" class="hidden mt-3 p-3.5 rounded-xl bg-slate-50 border border-emerald-200 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                    <i data-lucide="film" class="w-4 h-4"></i>
+                    <span>Video Recording Ready</span>
+                  </div>
+                  <a id="cam-video-dl" href="#" download="smartpole-incident.webm"
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Download Video</span>
+                  </a>
+                </div>
+                <video id="cam-video-player" controls class="w-full max-h-48 rounded-lg bg-black object-contain"></video>
+              </div>
+            </div>
+
+            <!-- Live Sensor Dials (5 cols) -->
+            <div class="lg:col-span-5 space-y-4">
+
+              <!-- 1. Gas Sensor Card -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-slate-500">MQ-2 Combustible Gas</span>
+                  <span id="live-gas-badge"
+                    class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Clean
+                    Air</span>
+                </div>
+                <div class="mt-2 flex items-baseline gap-2">
+                  <span id="live-gas-val" class="text-3xl font-bold text-navy-900">562</span>
+                  <span class="text-xs text-slate-500 font-medium">ppm</span>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                  <div id="live-gas-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                    style="width: 28%"></div>
+                </div>
+                <span class="text-[11px] text-slate-400 block mt-2">Safety Threshold: 1800 ppm</span>
+              </div>
+
+              <!-- 2. LDR Day / Night Card -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-slate-500">Ambient Light & Streetlight</span>
+                  <span id="live-ldr-badge"
+                    class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">Daylight</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between">
+                  <div>
+                    <span id="live-ldr-text" class="text-xl font-bold text-navy-900">Daylight Mode</span>
+                    <span class="text-xs text-slate-500 block">Relay Pin 32: Light OFF</span>
+                  </div>
+                  <i data-lucide="sun" id="live-ldr-icon" class="w-8 h-8 text-amber-500"></i>
+                </div>
+              </div>
+
+              <!-- 3. MPU-6050 Accelerometer / Tilt -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-slate-500 block">Pole Tilt & Impact Tracking (MPU-6050)</span>
+                  <button id="btn-calibrate-tilt" type="button" title="Calibrate current position as upright level zero"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition">
+                    <i data-lucide="crosshair" class="w-3.5 h-3.5"></i>
+                    <span>Calibrate Zero</span>
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <span class="text-[11px] text-slate-400 block">Tilt X (Raw & Deviation)</span>
+                    <span id="live-tilt-x" class="text-sm font-bold text-slate-800">2.57° (Δ0.0°)</span>
+                  </div>
+                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <span class="text-[11px] text-slate-400 block">Tilt Y (Raw & Deviation)</span>
+                    <span id="live-tilt-y" class="text-sm font-bold text-slate-800">-63.37° (Δ0.0°)</span>
+                  </div>
+                </div>
+                <div class="mt-2.5 flex items-center justify-between text-xs text-slate-500">
+                  <span id="live-tilt-threshold">Threshold: ±10.0° (Calibrated)</span>
+                  <span id="live-tilt-status" class="text-emerald-600 font-semibold">Stable (Level)</span>
+                </div>
+              </div>
+
+              <!-- 4. Geolocation coordinates -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <span class="text-xs font-semibold text-slate-500 block">NEO-6M GPS Position</span>
+                <div class="mt-2 text-sm font-mono text-slate-800 font-medium flex items-center justify-between">
+                  <span id="live-gps-coords">30.682360, 76.606288</span>
+                  <a id="live-gps-link" href="https://maps.google.com/?q=30.682360,76.606288" target="_blank"
+                    class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 font-sans">
+                    <span>Google Maps</span>
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 3: EMERGENCY ALERTS                        -->
+        <!-- ============================================== -->
+        <div id="tab-alerts" class="tab-pane hidden space-y-6 pb-12">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="text-sm font-bold text-navy-900 mb-0.5">Active Emergency Incidents & Reports</h3>
+                <p class="text-xs text-slate-500">Critical incidents and citizen SOS distress calls requiring immediate dispatch.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 font-medium">Sort:</span>
+                <select id="select-emergency-sort" class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-red-600 cursor-pointer transition">
+                  <option value="date-desc">Date (Newest First)</option>
+                  <option value="date-asc">Date (Oldest First)</option>
+                  <option value="id-desc">Incident ID (High to Low)</option>
+                  <option value="id-asc">Incident ID (Low to High)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="w-full overflow-hidden no-scrollbar table-no-side-scroll">
+              <table class="w-full text-left text-xs table-fixed">
+                <colgroup>
+                  <col class="w-[18%]">
+                  <col class="w-[18%]">
+                  <col class="w-[18%]">
+                  <col class="w-[17%]">
+                  <col class="w-[15%]">
+                  <col class="w-[6%]">
+                  <col class="w-[8%]">
+                </colgroup>
+                <thead
+                  class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200 select-none">
+                  <tr>
+                    <th id="th-emergency-sort-id" class="px-3 py-3 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Incident ID">
+                      <div class="flex items-center gap-1.5">
+                        <span class="truncate">Incident ID</span>
+                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900 flex-shrink-0"></i>
+                      </div>
+                    </th>
+                    <th class="px-3 py-3 truncate">Type</th>
+                    <th class="px-3 py-3 truncate">Location</th>
+                    <th id="th-emergency-sort-time" class="px-3 py-3 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Date">
+                      <div class="flex items-center gap-1.5">
+                        <span class="truncate">Time / Date</span>
+                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900 flex-shrink-0"></i>
+                      </div>
+                    </th>
+                    <th class="px-3 py-3 truncate">Response Team</th>
+                    <th class="px-3 py-3">Status</th>
+                    <th class="px-3 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="critical-alerts-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 4: CAMERA DETECTION GALLERY                -->
+        <!-- ============================================== -->
+        <div id="tab-camera" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 class="text-sm font-bold text-navy-900">Camera Detection Evidence</h3>
+                <p class="text-xs text-slate-500">Incident snapshot captures logged by ESP32-CAM</p>
+              </div>
+              <button id="btn-manual-camera-scan"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-navy-900 hover:bg-slate-800 transition">
+                <i data-lucide="scan" class="w-3.5 h-3.5"></i>
+                <span>Capture Snapshot</span>
+              </button>
+            </div>
+
+            <div id="camera-evidence-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 5: GAS MONITORING                          -->
+        <!-- ============================================== -->
+        <div id="tab-gas" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-6">
+            <div>
+              <h3 class="text-sm font-bold text-navy-900">MQ-2 Combustible Gas & Smoke Monitoring</h3>
+              <p class="text-xs text-slate-500">Real-time hazardous gas tracking with configurable threshold alerts.</p>
+            </div>
+
+            <!-- Current Reading Highlight Card -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-xs text-slate-500 block">Current Gas PPM</span>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <span id="gas-tab-val" class="text-3xl font-bold text-navy-900">562</span>
+                  <span class="text-xs text-slate-500">ppm</span>
+                </div>
+                <span class="text-xs text-emerald-600 font-semibold block mt-1">Normal Ambient Air</span>
+              </div>
+
+              <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-xs text-slate-500 block">Predefined Alarm Threshold</span>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <span class="text-3xl font-bold text-slate-700">1800</span>
+                  <span class="text-xs text-slate-500">ppm</span>
+                </div>
+                <span class="text-xs text-slate-500 block mt-1">Buzzer & alert triggered</span>
+              </div>
+
+              <div class="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-xs text-slate-500 block">Sensor Baseline Reference</span>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <span class="text-3xl font-bold text-slate-700">400 - 600</span>
+                  <span class="text-xs text-slate-500">ppm</span>
+                </div>
+                <span class="text-xs text-slate-500 block mt-1">Standard room clean air</span>
+              </div>
+            </div>
+
+            <!-- Gas Incidents Table -->
+            <div>
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Recorded Gas & Smoke Anomalies
+              </h4>
+              <div class="overflow-x-auto overflow-y-hidden">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                    <tr>
+                      <th class="px-4 py-2.5">Case ID</th>
+                      <th class="px-4 py-2.5">Location</th>
+                      <th class="px-4 py-2.5">Gas Level (PPM)</th>
+                      <th class="px-4 py-2.5">Timestamp</th>
+                      <th class="px-4 py-2.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gas-table-tbody" class="divide-y divide-slate-100 text-slate-700">
+                    <!-- Injected via JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 6: SOS REPORTS                             -->
+        <!-- ============================================== -->
+        <div id="tab-sos" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="text-sm font-bold text-navy-900">Physical SOS Panic Button Logs</h3>
+                <p class="text-xs text-slate-500">Civic distress calls triggered directly from smart pole hardware buttons.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-500 font-medium">Sort:</span>
+                <select id="select-sos-sort" class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer transition">
+                  <option value="date-desc">Date (Newest First)</option>
+                  <option value="date-asc">Date (Oldest First)</option>
+                  <option value="id-desc">Incident ID (High to Low)</option>
+                  <option value="id-asc">Incident ID (Low to High)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto overflow-y-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200 select-none">
+                  <tr>
+                    <th id="th-sos-sort-id" class="px-4 py-2.5 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Incident ID">
+                      <div class="flex items-center gap-1.5">
+                        <span>Incident ID</span>
+                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900"></i>
+                      </div>
+                    </th>
+                    <th class="px-4 py-2.5">Type</th>
+                    <th class="px-4 py-2.5">Pole Location</th>
+                    <th id="th-sos-sort-time" class="px-4 py-2.5 cursor-pointer hover:bg-slate-100 hover:text-navy-900 transition group" title="Click to sort by Date">
+                      <div class="flex items-center gap-1.5">
+                        <span>Time Triggered</span>
+                        <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-navy-900"></i>
+                      </div>
+                    </th>
+                    <th class="px-4 py-2.5">Assigned Unit</th>
+                    <th class="px-4 py-2.5">Status</th>
+                    <th class="px-4 py-2.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="sos-table-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 6: MPU-6050 TILT CALIBRATION ENGINE        -->
+        <!-- ============================================== -->
+        <div id="tab-calibration" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div>
+                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider block">Sensor Precision Engine</span>
+                <h3 class="text-lg font-bold text-navy-900 mt-0.5">MPU-6050 6-Axis Tilt Calibration</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Calibrate upright level baseline to eliminate false positive collision alarms from physical mounting tilt.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="cal-status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span id="cal-status-text">Calibrated Baseline Active</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Real-Time Calibrated vs Raw Angles Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <!-- Card 1: Calibrated Tilt X -->
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Calibrated Tilt X (Δ)</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <span id="cal-live-delta-x" class="text-2xl font-bold font-mono text-navy-900">+0.00°</span>
+                  <span class="text-xs text-slate-500 font-mono">(Raw: <span id="cal-raw-x">2.22°</span>)</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Deviation from stored level baseline</p>
+              </div>
+
+              <!-- Card 2: Calibrated Tilt Y -->
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Calibrated Tilt Y (Δ)</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <span id="cal-live-delta-y" class="text-2xl font-bold font-mono text-navy-900">+0.00°</span>
+                  <span class="text-xs text-slate-500 font-mono">(Raw: <span id="cal-raw-y">-63.89°</span>)</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Deviation from normal installed angle</p>
+              </div>
+
+              <!-- Card 3: Net Vector Deviation -->
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Net Tilt Deviation (Δθ)</span>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <span id="cal-live-net-tilt" class="text-2xl font-bold font-mono text-emerald-600">0.00°</span>
+                  <span id="cal-tilt-alarm-status" class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Stable</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Threshold: <span id="cal-current-threshold" class="font-bold text-navy-900">±10.0°</span></p>
+              </div>
+
+              <!-- Card 4: Stored Baseline -->
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Stored Baseline Zero</span>
+                <div class="mt-1 font-mono text-sm font-semibold text-slate-700">
+                  X: <span id="cal-base-x">2.22°</span> | Y: <span id="cal-base-y">-63.89°</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Calibrated: <span id="cal-date-time" class="text-slate-600">--</span></p>
+              </div>
+            </div>
+
+            <!-- Stationary Calibration Sequence Panel -->
+            <div class="p-5 rounded-2xl bg-gradient-to-r from-blue-50/70 to-slate-50 border border-blue-100 space-y-4">
+              <div class="flex items-start justify-between gap-4">
+                <div class="space-y-1">
+                  <h4 class="text-sm font-bold text-navy-900 flex items-center gap-2">
+                    <i data-lucide="crosshair" class="w-4 h-4 text-blue-600"></i>
+                    <span>Stationary Multi-Sample Calibration</span>
+                  </h4>
+                  <p class="text-xs text-slate-600 leading-relaxed max-w-xl">
+                    Collects 20 consecutive MPU-6050 sensor samples, verifies the pole is stationary (jitter standard deviation &lt; 2.0°), computes the new upright baseline, and writes to persistent storage.
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button id="btn-start-calibration-flow" type="button"
+                    class="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition flex items-center gap-2 shadow-sm">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                    <span>Calibrate X/Y Baseline</span>
+                  </button>
+                  <button id="btn-reset-calibration" type="button" title="Reset baseline to 0,0"
+                    class="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 transition">
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              <!-- Calibration Progress Bar (Hidden during idle) -->
+              <div id="cal-progress-container" class="hidden space-y-2 pt-2 border-t border-blue-200/60">
+                <div class="flex justify-between text-xs font-semibold text-blue-900">
+                  <span id="cal-progress-label">Sampling sensor stability...</span>
+                  <span id="cal-progress-pct" class="font-mono">0%</span>
+                </div>
+                <div class="w-full h-2.5 bg-blue-100 rounded-full overflow-hidden">
+                  <div id="cal-progress-bar" class="h-full bg-blue-600 transition-all duration-150" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration & Thresholds -->
+            <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-700 block">Accident Detection Tilt Threshold</label>
+                <div class="flex items-center gap-3">
+                  <select id="select-tilt-threshold" class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    <option value="8.0">±8.0° (High Sensitivity)</option>
+                    <option value="10.0" selected>±10.0° (Recommended Default)</option>
+                    <option value="12.0">±12.0° (Moderate Wind Buffer)</option>
+                    <option value="15.0">±15.0° (Heavy Infrastructure Threshold)</option>
+                  </select>
+                  <button id="btn-save-threshold" type="button" class="px-4 py-2 rounded-lg bg-navy-900 hover:bg-slate-800 text-white text-xs font-semibold transition">
+                    Save Threshold
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500">Pole deviation exceeding this angle triggers a verified tilt warning/impact event.</p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+                <span class="font-semibold text-slate-800 block">Hardware Axis Verification</span>
+                <p class="leading-relaxed">
+                  Accelerometer vector uses I2C registers 0x3B-0x3F. X-axis corresponds to lateral road pitch, and Y-axis corresponds to pole mast incline. Offsets persist across server restarts in <code class="font-mono text-[11px] bg-slate-200 px-1 py-0.5 rounded">calibration.json</code> and Firebase RTDB.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 7: RESTORED GPS LOCATION                   -->
+        <!-- ============================================== -->
+        <div id="tab-locations" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider block">NEO-6M Satellite Positioning</span>
+                <h3 class="text-lg font-bold text-navy-900 mt-0.5">Municipal Safety Pole GPS Location</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Real-time geographic coordinates, live satellite tracking, and visual location marker</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <a id="btn-open-google-maps" href="https://maps.google.com/?q=12.971599,77.594563" target="_blank" rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition">
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                  <span>Open in Google Maps</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- GPS Coordinates & Telemetry Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block">GPS Fix Status</span>
+                <span id="gps-tab-status" class="text-xs font-bold text-emerald-600 mt-1 block">Live 3D Fix</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Latitude</span>
+                <span id="gps-tab-lat" class="text-xs font-mono font-bold text-navy-900 mt-1 block">12.971599° N</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Longitude</span>
+                <span id="gps-tab-lng" class="text-xs font-mono font-bold text-navy-900 mt-1 block">77.594563° E</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block">Last Update</span>
+                <span id="gps-tab-time" class="text-xs font-mono text-slate-600 mt-1 block">Just now</span>
+              </div>
+            </div>
+
+            <!-- Full-Screen Restored Map Container with Live Blip -->
+            <div class="relative w-full h-[540px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 z-0">
+              <div id="full-locations-map" class="w-full h-full"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 8: OFFICER PROFILE & ACCESS CONTROL        -->
+        <!-- ============================================== -->
+        <div id="tab-profile" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+            
+            <!-- Officer Identity Card -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-navy-900 text-white flex items-center justify-center font-bold text-xl shadow-lg shadow-navy-900/20" id="profile-avatar">
+                  OP
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 id="profile-name" class="text-lg font-bold text-navy-900">Municipal Officer</h3>
+                    <span id="profile-badge-role" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                      Operator
+                    </span>
+                  </div>
+                  <p id="profile-email" class="text-xs text-slate-500 font-mono mt-0.5">officer@smartpole.gov</p>
+                  <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>Authenticated via Firebase Security</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="btn-profile-logout" type="button"
+                  class="px-4 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 transition flex items-center gap-1.5">
+                  <i data-lucide="log-out" class="w-4 h-4"></i>
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Profile Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] text-slate-400 uppercase font-semibold block">Authorization Status</span>
+                <span id="profile-status" class="text-sm font-bold text-emerald-600 mt-1 block">Active & Approved</span>
+                <span class="text-[11px] text-slate-500 mt-0.5 block">Full telemetry & dispatch permissions</span>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] text-slate-400 uppercase font-semibold block">Assigned Municipal Zone</span>
+                <span class="text-sm font-bold text-slate-800 mt-1 block">Sector 14 Grid (Pole #01)</span>
+                <span class="text-[11px] text-slate-500 mt-0.5 block">Real-time hardware live link</span>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-[11px] text-slate-400 uppercase font-semibold block">Session Initiated</span>
+                <span id="profile-session-time" class="text-sm font-mono font-semibold text-slate-800 mt-1 block">Today, Active</span>
+                <span class="text-[11px] text-slate-500 mt-0.5 block">Audit trail mirrored to /user_logs</span>
+              </div>
+            </div>
+
+            <!-- Municipal Officer Management & Approvals Panel -->
+            <div id="admin-user-management-section" class="pt-4 border-t border-slate-100 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-navy-900 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-blue-600"></i>
+                    <span>Officer Access Control & Approvals</span>
+                  </h4>
+                  <p class="text-xs text-slate-500">Municipal administrative approval panel for reviewing officer access requests</p>
+                </div>
+                <button id="btn-refresh-users" type="button" class="text-xs text-blue-600 hover:underline flex items-center gap-1 font-semibold">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  <span>Refresh Officers</span>
+                </button>
+              </div>
+
+              <!-- User List Table -->
+              <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th class="py-2.5 px-4">Officer Name</th>
+                      <th class="py-2.5 px-4">Email</th>
+                      <th class="py-2.5 px-4">Role</th>
+                      <th class="py-2.5 px-4">Authorization</th>
+                      <th class="py-2.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-users-body" class="divide-y divide-slate-100 text-slate-700">
+                    <tr>
+                      <td colspan="5" class="py-4 text-center text-slate-400">Loading officer records...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 8: SETTINGS (2-COLUMN MODERN LAYOUT)       -->
+        <!-- ============================================== -->
+        <div id="tab-settings" class="tab-pane hidden space-y-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden w-full">
+            
+            <!-- Settings Header -->
+            <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-white">
+              <div>
+                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider block">System Settings</span>
+                <h3 class="text-lg font-bold text-navy-900 mt-0.5">System Configuration & Network</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Configure hardware network endpoints, cloud persistence, AI sensitivity, and data retention.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>System Online</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Settings 2-Column Body -->
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- Column 1: Hardware & Network Endpoints -->
+              <div class="space-y-5">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <i data-lucide="router" class="w-4 h-4 text-blue-600"></i>
+                  <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Network & Hardware Endpoints</h4>
+                </div>
+
+                <!-- Pole IP config -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                    <span>ESP32 Main Controller Host / IP</span>
+                    <span class="text-[11px] font-mono text-slate-400">Port 80 HTTP</span>
+                  </label>
+                  <div class="relative">
+                    <input id="settings-pole-ip" type="text" value="10.250.176.230"
+                      placeholder="e.g. 10.250.176.230 or smartpole.local"
+                      class="w-full px-3.5 py-2.5 text-sm font-mono rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50/50">
+                  </div>
+                  <span class="text-[11px] text-slate-500 flex items-center gap-1">
+                    <i data-lucide="link" class="w-3 h-3 text-slate-400"></i>
+                    <span>REST polling endpoint: <code class="font-mono text-blue-600">http://&lt;IP&gt;/api</code></span>
+                  </span>
+                </div>
+
+                <!-- Camera IP config -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                    <span>ESP32-CAM Stream Host / IP</span>
+                    <span class="text-[11px] font-mono text-slate-400">Port 80 MJPEG</span>
+                  </label>
+                  <div class="relative">
+                    <input id="settings-cam-ip" type="text" value="10.250.176.145"
+                      placeholder="e.g. 10.250.176.145 or esp32cam.local"
+                      class="w-full px-3.5 py-2.5 text-sm font-mono rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition bg-slate-50/50">
+                  </div>
+                  <span class="text-[11px] text-slate-500 flex items-center gap-1">
+                    <i data-lucide="video" class="w-3 h-3 text-slate-400"></i>
+                    <span>Direct video endpoint: <code class="font-mono text-blue-600">http://&lt;IP&gt;/stream</code></span>
+                  </span>
+                </div>
+
+                <!-- Hardware Connection Card -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-600 font-medium">Gateway Server Port</span>
+                    <span class="font-mono font-bold text-navy-900">5000</span>
+                  </div>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-600 font-medium">Polling Cadence</span>
+                    <span class="font-semibold text-slate-700">Every 2.0s</span>
+                  </div>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-600 font-medium">WebSocket Connection</span>
+                    <span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Socket.IO Active
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Column 2: Cloud Database & AI Surveillance -->
+              <div class="space-y-5">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i>
+                  <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Cloud Database & AI Intelligence</h4>
+                </div>
+
+                <!-- Firebase Realtime Database Integration -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 block">Firebase Realtime Database</span>
+                      <span class="text-[11px] font-mono text-slate-500 truncate block max-w-[280px]">smart-street-safety-pole-default-rtdb</span>
+                    </div>
+                    <span id="badge-firebase-status"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span>Connected</span>
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-500 leading-relaxed">Evidence images, telemetry snapshots, and officer incident logs sync continuously to cloud storage.</p>
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-200">
+                    <a href="https://console.firebase.google.com/u/0/project/smart-street-safety-pole/database/smart-street-safety-pole-default-rtdb/data/~2F"
+                       target="_blank" rel="noopener noreferrer"
+                       class="text-xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1">
+                      <span>Firebase Console</span>
+                      <i data-lucide="external-link" class="w-3 h-3"></i>
+                    </a>
+                    <button id="btn-sync-firebase" type="button"
+                      class="px-3 py-1.5 rounded-lg bg-navy-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                      <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                      <span>Sync All Evidence</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- AI Roboflow Vision Parameters -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-800">Roboflow Serverless Vision</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">Autonomous Active</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                      <span class="text-[10px] text-slate-400 uppercase font-semibold block">Accident Model</span>
+                      <span class="font-bold text-slate-800 text-xs">accident-detection-eamy3/1</span>
+                      <span class="text-[10px] text-slate-500 block mt-0.5">Confidence: 40%</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                      <span class="text-[10px] text-slate-400 uppercase font-semibold block">Fire / Smoke Model</span>
+                      <span class="font-bold text-slate-800 text-xs">firesmokedetection</span>
+                      <span class="text-[10px] text-slate-500 block mt-0.5">Confidence: 45%</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Full Width Row: Data Management & Privacy -->
+              <div class="lg:col-span-2 pt-4 border-t border-slate-200 space-y-3">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Data Management & Privacy</h4>
+                  <p class="text-xs text-slate-500 mt-0.5">Surveillance retention and critical administrative cleanup operations.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button id="btn-clear-photos" type="button"
+                    class="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-left transition group">
+                    <div>
+                      <span class="text-xs font-semibold text-slate-800 block group-hover:text-blue-600 transition">Purge Evidence Photos</span>
+                      <span class="text-[11px] text-slate-500">Deletes camera JPEG snapshots to free storage (Requires Admin Password)</span>
+                    </div>
+                    <i data-lucide="image-minus" class="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition"></i>
+                  </button>
+
+                  <button id="btn-clear-all-logs" type="button"
+                    class="flex items-center justify-between p-3.5 rounded-xl border border-red-200 hover:bg-red-50 text-left transition text-red-600 group">
+                    <div>
+                      <span class="text-xs font-semibold block group-hover:text-red-700 transition">Clear All Incident Logs</span>
+                      <span class="text-[11px] text-red-400">Permanently wipes case history from DB (Requires Admin Password)</span>
+                    </div>
+                    <i data-lucide="trash-2" class="w-4 h-4 text-red-500 group-hover:scale-110 transition"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Unified Settings Footer (One Save / Cancel in Footer) -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span class="text-xs text-slate-500">Changes to controller IP and camera stream apply immediately across dashboard.</span>
+              <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button id="btn-cancel-settings" type="button"
+                  class="px-4 py-2 rounded-lg border border-slate-300 hover:bg-white text-slate-700 text-xs font-semibold transition">
+                  Cancel
+                </button>
+                <button id="btn-save-all-settings" type="button"
+                  class="px-5 py-2 rounded-lg bg-navy-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+
+  <!-- ========================================================= -->
+  <!-- 2.5 ACTIVE EMERGENCY ALERT PANEL (OLD-TYPE EMERGENCY MODAL)-->
+  <!-- ========================================================= -->
+  <div id="active-emergency-panel"
+    class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div
+      class="bg-slate-900 text-white rounded-2xl border-2 border-red-500 shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col emergency-pulse-glow">
+
+      <!-- Emergency Modal Header -->
+      <div id="emergency-header"
+        class="px-6 py-4 bg-red-500/15 border-b border-red-500/30 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 animate-pulse"></i>
+          <h2 id="emergency-title" class="text-lg font-extrabold text-red-500 tracking-wider uppercase">
+            CRITICAL ALERT
+          </h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="emergency-priority"
+            class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40">
+            Priority: HIGH
+          </span>
+          <button id="btn-close-emergency-panel" class="text-slate-400 hover:text-white p-1 rounded-lg">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Emergency Modal Body -->
+      <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <!-- Emergency Info -->
+        <div class="space-y-3.5 text-sm">
+          <div class="flex items-center gap-2">
+            <i data-lucide="target" class="w-4 h-4 text-red-400"></i>
+            <span class="text-slate-400 font-medium">Type:</span>
+            <span id="emergency-type" class="font-bold text-white uppercase tracking-wide">ROAD ACCIDENT DETECTED</span>
+          </div>
+
+          <!-- Multi-frame AI & Sensor Corroboration Status -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="emergency-validation" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800/60 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>Multi-Frame Corroborated</span>
+            </span>
+            <span id="emergency-confidence" class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-950 text-blue-300 border border-blue-800/60">
+              Confidence: 85%
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <i data-lucide="radio-tower" class="w-4 h-4 text-blue-400"></i>
+            <span class="text-slate-400 font-medium">Location:</span>
+            <span class="font-semibold text-white">Smart Pole <span id="emergency-pole">01</span></span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i>
+            <span class="text-slate-400 font-medium">GPS:</span>
+            <span id="emergency-gps" class="font-mono text-xs text-slate-300">12.97160, 77.59456</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+            <span class="text-slate-400 font-medium">Time:</span>
+            <span id="emergency-time" class="text-slate-300">--:--:--</span>
+          </div>
+
+          <div id="emergency-telemetry-row" class="pt-2 border-t border-slate-800 grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="bg-slate-800/60 p-2 rounded-lg border border-slate-700/50">
+              <span class="text-[10px] text-slate-400 block">MQ-2 Gas</span>
+              <span id="emergency-mq2" class="font-bold text-slate-200">562 ppm</span>
+            </div>
+            <div class="bg-slate-800/60 p-2 rounded-lg border border-slate-700/50">
+              <span class="text-[10px] text-slate-400 block">Tilt Deviation (Δ)</span>
+              <span id="emergency-tilt" class="font-bold text-slate-200">Δ0.0° (Level)</span>
+            </div>
+            <div class="bg-slate-800/60 p-2 rounded-lg border border-slate-700/50">
+              <span class="text-[10px] text-slate-400 block">Ambient</span>
+              <span id="emergency-light" class="font-bold text-slate-200">Normal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Media / Camera Snapshot -->
+        <div class="space-y-2">
+          <div id="emergency-camera-view"
+            class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
+            <img id="emergency-img" src="" alt="Emergency Frame" class="w-full h-full object-cover">
+            <div id="emergency-no-img" class="hidden text-slate-500 text-xs flex flex-col items-center">
+              <i data-lucide="camera" class="w-8 h-8 mb-1"></i>
+              <span>Live incident evidence attached</span>
+            </div>
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white shadow">
+              Live Incident Frame
+            </span>
+          </div>
+          <p class="text-[11px] text-center text-slate-400">Evidence captured and mirrored to Firebase RTDB</p>
+        </div>
+      </div>
+
+      <!-- Emergency Modal Footer -->
+      <div class="p-4 bg-black/40 border-t border-slate-800 flex items-center gap-3">
+        <a id="btn-emergency-download" href="#" download="smartpole-emergency-evidence.jpg"
+          class="py-3 px-4 rounded-xl font-bold text-xs text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center justify-center gap-2">
+          <i data-lucide="download" class="w-4 h-4 text-slate-300"></i>
+          <span>Download Evidence</span>
+        </a>
+        <button id="dismiss-emergency-btn"
+          class="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-lg shadow-red-600/30">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Acknowledge Incident & Clear</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 3. INCIDENT DETAILS MODAL                                 -->
+  <!-- ========================================================= -->
+  <div id="modal-incident-details"
+    class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span id="modal-severity-badge"
+            class="px-2.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">CRITICAL</span>
+          <div>
+            <h3 id="modal-incident-type" class="text-base font-bold text-navy-900">Road Accident Detected</h3>
+            <p id="modal-case-id" class="text-xs font-mono text-slate-500">CASE-1793438755716</p>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-6 flex-1">
+
+        <!-- Photographic Evidence Image -->
+        <div>
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Camera Evidence /
+            Incident Snapshot</span>
+          <div
+            class="w-full bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-slate-200">
+            <img id="modal-image" src="" alt="Incident Photo Evidence" class="w-full h-full object-contain">
+            <div id="modal-no-image" class="hidden text-slate-400 text-xs flex flex-col items-center">
+              <i data-lucide="image-off" class="w-8 h-8 mb-2"></i>
+              <span>No photographic evidence attached</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry & Sensor Readings at Time of Incident -->
+        <div>
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Sensor Telemetry at
+            Incident Timestamp</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block">Gas (MQ-2)</span>
+              <span id="modal-mq2" class="font-bold text-slate-800 text-sm">576 ppm</span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block">Tilt X</span>
+              <span id="modal-tilt-x" class="font-bold text-slate-800 text-sm">0.31°</span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block">Tilt Y</span>
+              <span id="modal-tilt-y" class="font-bold text-slate-800 text-sm">-78.62°</span>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span class="text-slate-400 block">Day / Night</span>
+              <span id="modal-light" class="font-bold text-slate-800 text-sm">Dark (Night)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location, Time & Response Team -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="space-y-1">
+            <span class="text-slate-400 block">Assigned Pole & Location:</span>
+            <span id="modal-location" class="font-semibold text-slate-800 block text-sm">POLE-01 (Sector 14 North,
+              30.68238, 76.60575)</span>
+          </div>
+          <div class="space-y-1">
+            <span class="text-slate-400 block">Timestamp:</span>
+            <span id="modal-timestamp" class="font-semibold text-slate-800 block text-sm">Oct 31, 2026, 2:55 PM</span>
+          </div>
+          <div class="space-y-1">
+            <span class="text-slate-400 block">Incident Status:</span>
+            <span id="modal-status-badge"
+              class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">Pending</span>
+          </div>
+          <div class="space-y-1">
+            <span class="text-slate-400 block">Assigned Response Team:</span>
+            <span id="modal-response-team" class="font-semibold text-slate-800 block text-sm">City Traffic Police & EMS
+              Unit 04</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Actions -->
+      <div
+        class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <a id="btn-modal-download-evidence" href="#" download="smartpole-incident-evidence.jpg"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition"
+            title="Download Evidence Photo to Computer">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>Download Evidence</span>
+          </a>
+          <button id="btn-modal-delete-photo"
+            class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 transition"
+            title="Delete Evidence Photo Only">
+            <i data-lucide="image-minus" class="w-3.5 h-3.5 text-slate-600"></i>
+            <span>Delete Photo</span>
+          </button>
+          <button id="btn-modal-delete-log"
+            class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-red-700 bg-red-100 hover:bg-red-200 transition"
+            title="Delete Entire Incident Log">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-600"></i>
+            <span>Delete Log</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button id="btn-modal-ack"
+            class="px-4 py-2 rounded-xl text-xs font-semibold text-amber-800 bg-amber-100 hover:bg-amber-200 transition">
+            Mark as Acknowledged
+          </button>
+          <button id="btn-modal-resolve"
+            class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition">
+            Mark as Resolved
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Main JavaScript Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>

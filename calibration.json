@@ -1,0 +1,9 @@
+{
+  "baselineTiltX": -9.04,
+  "baselineTiltY": -59.6,
+  "calibratedAt": "2026-10-31T21:58:19.702Z",
+  "calibratedBy": "Municipal Safety Officer",
+  "sampleCount": 20,
+  "status": "calibrated",
+  "tiltThreshold": 10
+}
